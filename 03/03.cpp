@@ -8,7 +8,7 @@
 #include <tuple>
 
 
-bool read_file(std::string filename, std::vector<std::vector<char> >& lines) {
+bool read_file(std::string filename, std::vector<std::string>& lines) {
     std::ifstream file;
     file.open(filename);
 
@@ -16,11 +16,7 @@ bool read_file(std::string filename, std::vector<std::vector<char> >& lines) {
 
     std::string line;
     while (getline(file, line)) {
-        std::vector<char> row;
-        for (int i=0; i<line.size(); i++) {
-            row.push_back(line[i]);
-        }
-        lines.push_back(row);
+        lines.push_back(line);
     }
 
     file.close();
@@ -29,7 +25,7 @@ bool read_file(std::string filename, std::vector<std::vector<char> >& lines) {
 }
 
 
-int part_one(std::vector<std::vector<char> >& lines) {
+int part_one(std::vector<std::string>& lines) {
     int result = 0;
     int n_lines = lines.size();
     int n = lines[0].size();
@@ -76,7 +72,7 @@ int part_one(std::vector<std::vector<char> >& lines) {
 }
 
 
-int part_two(std::vector<std::vector<char> >& lines) {
+int part_two(std::vector<std::string>& lines) {
     int result = 0;
     int n_lines = lines.size();
     int n = lines[0].size();
@@ -141,7 +137,7 @@ int part_two(std::vector<std::vector<char> >& lines) {
 
 int main(int argc, char* argv[]) {
     char* filename = argv[1];
-    std::vector<std::vector<char> > lines;
+    std::vector<std::string> lines;
 
     read_file(filename, lines);
     printf("%d\n", part_one(lines));
