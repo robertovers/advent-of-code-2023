@@ -25,18 +25,19 @@ bool read_file(std::string filename, std::vector<std::string>& lines) {
 }
 
 
+typedef std::pair<std::string, std::string> choices;
+
+
 int part_one(std::vector<std::string>& lines) {
     int result = 0;
-
     std::string path = lines[0];
-    std::map<std::string, std::pair<std::string, std::string> > nodes;
+    std::map<std::string, choices> nodes;
 
     for (int i=2; i<lines.size(); i++) {
         std::string line = lines[i];
         std::string from = line.substr(0, 3);
         std::string left = line.substr(7, 3);
         std::string right = line.substr(12, 3);
-
         nodes[from] = std::make_pair(left, right);
     }
 
@@ -49,11 +50,7 @@ int part_one(std::vector<std::string>& lines) {
             current = nodes[current].second;
         }
 
-        if (c == path.size()-1) {
-            c = 0;
-        } else {
-            c++;
-        }
+        if (c == path.size()-1) c = 0; else c++;
         result++;
     } 
 
@@ -76,7 +73,11 @@ bool is_end(int it, std::vector<std::string>& current_nodes, std::vector<int>& z
 }
 
 
-int update_nodes(std::string path, int step, std::vector<std::string>& current_nodes, std::map<std::string, std::pair<std::string, std::string> >& node_map) {
+int update_nodes(
+    std::string path, int step,
+    std::vector<std::string>& current_nodes,
+    std::map<std::string, choices>& node_map)
+{
     for (auto& node: current_nodes) {
         std::string next_node;
         if (path[step] == 'L') {
@@ -87,11 +88,8 @@ int update_nodes(std::string path, int step, std::vector<std::string>& current_n
         node = next_node;
     }
 
-    if (step == path.size()-1) {
-        step = 0;
-    } else {
-        step++;
-    }
+    if (step == path.size()-1) step = 0; else step++;
+
     return step;
 }
 
@@ -105,12 +103,10 @@ int part_two(std::vector<std::string>& lines) {
         std::string from = line.substr(0, 3);
         std::string left = line.substr(7, 3);
         std::string right = line.substr(12, 3);
-
         node_map[from] = std::make_pair(left, right);
     }
 
     std::vector<std::string> current_nodes;
-
     for (const auto& [node, paths]: node_map) {
         if (std::regex_match(node, std::regex("^..A$"))) {
             current_nodes.push_back(node);
@@ -122,8 +118,7 @@ int part_two(std::vector<std::string>& lines) {
         zs.push_back(-1);
     }
 
-    int it;
-    int step;
+    int it, step;
     while (not is_end(it, current_nodes, zs)) {
         step = update_nodes(path, step, current_nodes, node_map);
         it++;
@@ -134,6 +129,7 @@ int part_two(std::vector<std::string>& lines) {
     }
     printf("\n");
 
+    // then i used an online calculator to find the lcm :D
     return 0;
 }
 
