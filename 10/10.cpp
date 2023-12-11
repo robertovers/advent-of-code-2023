@@ -7,6 +7,7 @@
 #include <map>
 #include <tuple>
 #include <deque>
+#include <unordered_set>
 
 
 bool read_file(std::string filename, std::vector<std::string>& lines) {
@@ -32,11 +33,17 @@ typedef struct node {
     int distance;
     int last_direction;
     char symbol;
+    size_t previous_index;
 };
 
 
 const int x_shifts[] = {-1, 0, 1, 0};
 const int y_shifts[] = {0, -1, 0, 1};
+
+
+std::string node_to_string(node& n) {
+    return std::to_string(n.x) + std::to_string(n.y);
+}
 
 
 bool _valid_north(node& current, node& next) {
@@ -99,7 +106,7 @@ node find_start_node(std::vector<std::string>& lines) {
     for (int y=0; y<lines.size(); y++) {
         for (int x=0; x<lines.size(); x++) {
             if (lines[y][x] == 'S') {
-                start_node = { x, y, 0, -1, 'S' };
+                start_node = { x, y, 0, -1, 'S', 0 };
                 return start_node;
             }
         }
@@ -113,32 +120,39 @@ void replace_start_node(std::vector<std::string>& lines, node& start_node) {
         int valid_count = 0;
         for (int d=0; d<4; d++) {
             start_node.symbol = c;
-            printf("%c\n", c);
             int next_x = start_node.x + x_shifts[d];
             int next_y = start_node.y + y_shifts[d];
-            node next = { next_x, next_y, 1, d, lines[next_y][next_x] };
+            node next = { next_x, next_y, 1, d, lines[next_y][next_x], 0 };
             valid_count += (int) valid(start_node, next);
-            printf("%c %c %d\n", start_node.symbol, next.symbol, (int) valid(start_node, next));
         }
         if (valid_count == 2) return;
     }
 }
 
 
-int part_one(std::vector<std::string>& lines) {
+std::vector<node> recover_path(std::vector<node> visited, size_t last) {
+    std::vector<node> path;
+    path.push_back(visited[last]);
+    size_t current = last;
+    while (current != 0) {
+        path.push_back(visited[current]);
+        current = visited[current].previous_index;
+    }
+    return path;
+}
+
+
+int part_one(std::vector<std::string> lines) {
 
     std::deque<node> to_visit;
 
     node start_node = find_start_node(lines);
     replace_start_node(lines, start_node);
-    printf("start: (%d,%d) %c\n", start_node.y, start_node.x, start_node.symbol);
     lines[start_node.y][start_node.x] = start_node.symbol;
     to_visit.push_back(start_node);
 
-    node current;
     while (!to_visit.empty()) {
-        current = to_visit.back();
-        printf("(%d,%d)\n", current.y, current.x);
+        node current = to_visit.back();
         to_visit.pop_back();
 
         if (current.distance > 2 && current.x == start_node.x && current.y == start_node.y) {
@@ -149,7 +163,7 @@ int part_one(std::vector<std::string>& lines) {
             int next_x = current.x + x_shifts[d];
             int next_y = current.y + y_shifts[d];
             if (next_y > lines.size() || next_y < 0 || next_x > lines[0].size() || next_x < 0) continue;
-            node next = { next_x, next_y, current.distance+1, d, lines[next_y][next_x] };
+            node next = { next_x, next_y, current.distance+1, d, lines[next_y][next_x], 0 };
             if (valid(current, next)) to_visit.push_back(next);
         }
     }
@@ -158,9 +172,93 @@ int part_one(std::vector<std::string>& lines) {
 }
 
 
-int part_two(std::vector<std::string>& lines) {
+int part_two(std::vector<std::string> lines) {
 
-    return -1;
+    std::ofstream path_file;
+    path_file.open("path.txt");
+
+    std::deque<node> to_visit;
+    std::vector<node> visited;
+
+    node start_node = find_start_node(lines);
+    replace_start_node(lines, start_node);
+    lines[start_node.y][start_node.x] = start_node.symbol;
+    to_visit.push_back(start_node);
+
+    node current;
+    size_t last;
+
+    while (!to_visit.empty()) {
+        current = to_visit.back();
+        to_visit.pop_back();
+
+        if (current.distance > 2 && current.x == start_node.x && current.y == start_node.y) {
+            last = visited.size() - 1;
+            break;
+        }
+
+        visited.push_back(current);
+
+        if (current.distance > 0) {
+            size_t prev_index = current.previous_index;
+        }
+
+        for (int d = 0; d < 4; d++) {
+            int next_x = current.x + x_shifts[d];
+            int next_y = current.y + y_shifts[d];
+            if (next_y >= lines.size() || next_y < 0 || next_x >= lines[0].size() || next_x < 0) continue;
+            size_t prev_index = visited.size() - 1;
+            node next = {next_x, next_y, current.distance + 1, d, lines[next_y][next_x], prev_index};
+            if (valid(current, next)) to_visit.push_back(next);
+        }
+    }
+
+    std::vector<node> path = recover_path(visited, last);
+
+    int result = 0;
+    for (int y=0; y<lines.size(); y++) {
+        std::string row_string = "";
+
+        // find the pipes in this row
+        std::vector<node> pipes;
+        for (node& n: path) {
+            if (n.y == y) {
+                pipes.push_back(n);
+            }
+        }
+
+        // use the even-odd rule by checking how many of the above pipes
+        // are crossed by each tile if you were to draw a line to the left
+        for (int x=0; x<lines[0].size(); x++) {
+            int crossed = 0;
+            if (std::find_if(pipes.begin(), pipes.end(), [x=x](const node& m) -> bool { return m.x == x; }) == pipes.end()) {
+                for (node& p: pipes) {
+                    if (x > p.x && (p.symbol == '|' || p.symbol == 'J' || p.symbol == 'L')) {
+                        crossed++;
+                    }
+                }
+            }
+
+            if (crossed % 2 == 1) {
+                result++;
+                row_string += ".";
+            } else {
+                row_string += " ";
+            }
+        }
+
+        for (node& p: path) {
+            if (p.y == y) {
+                row_string[p.x] = lines[p.y][p.x];
+            }
+        }
+
+        path_file << row_string << std::endl;
+    }
+
+    path_file.close();
+
+    return result;
 }
 
 
