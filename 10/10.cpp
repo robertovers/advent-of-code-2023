@@ -149,6 +149,7 @@ int part_one(std::vector<std::string> lines) {
     node start_node = find_start_node(lines);
     replace_start_node(lines, start_node);
     lines[start_node.y][start_node.x] = start_node.symbol;
+    printf("start node: (%d,%d)\n", start_node.y, start_node.x);
     to_visit.push_back(start_node);
 
     while (!to_visit.empty()) {
@@ -214,6 +215,7 @@ int part_two(std::vector<std::string> lines) {
     }
 
     std::vector<node> path = recover_path(visited, last);
+    path.push_back(start_node);
 
     int result = 0;
     for (int y=0; y<lines.size(); y++) {
@@ -241,9 +243,9 @@ int part_two(std::vector<std::string> lines) {
 
             if (crossed % 2 == 1) {
                 result++;
-                row_string += ".";
+                row_string += "1";
             } else {
-                row_string += " ";
+                row_string += "0";
             }
         }
 
