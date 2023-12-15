@@ -117,6 +117,23 @@ std::vector<std::string> map_from_string(std::string str) {
 int part_one(std::vector<std::string> lines) {
     int result = 0;
 
+    slide_north(lines);
+
+    for (int y=0; y<lines.size(); y++) {
+        for (int x=0; x<lines[0].size(); x++) {
+            if (lines[y][x] == 'O') {
+                result += lines.size() - y;
+            }
+        }
+    }
+
+    return result;
+}
+
+
+int part_two(std::vector<std::string> lines) {
+    int result = 0;
+
     std::map<std::string, int> seen;
     std::vector<std::string> repeating;
 
@@ -130,7 +147,6 @@ int part_one(std::vector<std::string> lines) {
         if (seen.find(str) != seen.end() && std::find(repeating.begin(), repeating.end(), str) == repeating.end()) {
             repeating.push_back(str);
             all_repeats = false;
-            printf("%d\n", repeating.size());
         } else if (seen.find(str) == seen.end()) {
             all_repeats = false;
             seen[str] = i;
@@ -155,16 +171,6 @@ int part_one(std::vector<std::string> lines) {
                 result += lines.size() - y;
             }
         }
-    }
-
-    return result;
-}
-
-
-int part_two(std::vector<std::string> lines) {
-    int result = 0;
-
-    for (std::string line: lines) {
     }
 
     return result;
