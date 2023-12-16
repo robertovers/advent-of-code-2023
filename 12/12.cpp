@@ -46,8 +46,10 @@ long arrangements(std::string& springs, std::vector<int>& lens, int i, int cur, 
     if (i == springs.size()) {
         // end of string & final group -> arrangement found
         if ((j == lens.size() && cur == 0) || (j == lens.size()-1 && cur == lens[j])) {
+            memo[key] = 1;
             return 1;
         }
+        memo[key] = 0;
         return 0;
     }
 
@@ -69,10 +71,9 @@ long arrangements(std::string& springs, std::vector<int>& lens, int i, int cur, 
             }
             result += arrangements(springs, lens, i+1, 0, j, memo);
         } else {
-            result += arrangements(springs, lens, i+1, cur+1, j, memo);  // '?' -> '#'
-            if (cur != 0 && cur < lens[j]) {
-                result += 0;  // current group too small 
-            } else {
+            if (j < lens.size())
+                result += arrangements(springs, lens, i+1, cur+1, j, memo);  // '?' -> '#'
+            if (cur == 0 || cur == lens[j]) {
                 result += arrangements(springs, lens, i+1, cur, j, memo);  // '?' -> '.'
             }
         }
@@ -116,7 +117,7 @@ long solve(std::vector<std::string>& lines, bool part2) {
         std::unordered_map<std::string, long> memo;
 
         long k = arrangements(springs, nums, 0, 0, 0, memo);
-        //printf("%s\n%ld\n", springs.c_str(), k);
+        printf("%s\n%ld\n", springs.c_str(), k);
         result += k;
     }
 
