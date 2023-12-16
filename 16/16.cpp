@@ -60,7 +60,6 @@ int part_one(std::vector<std::string> lines, beam start_beam) {
         
         beam b = beams.front();
         beams.pop_front();
-
         visited[b.y][b.x] = 1;
 
         std::string key = std::to_string(b.x) + "." + std::to_string(b.y);
@@ -77,18 +76,6 @@ int part_one(std::vector<std::string> lines, beam start_beam) {
         if (b.dy == -1) {
             if (visited_n.find(key) == visited_n.end()) visited_n.insert(key);
         }
-
-        char d;
-        if (b.dx == 1) {
-            d = '>';
-        } else if (b.dx == -1) {
-            d = '<';
-        } else if (b.dy == 1) {
-            d = 'v';
-        } else {
-            d = '^';
-        }
-        lines2[b.y][b.x] = d;
 
         switch (lines[b.y][b.x]) {
             case ('.'):
@@ -182,10 +169,7 @@ int part_two(std::vector<std::string> lines) {
 
     int best = 0;
     for (beam sb: start_beams) {
-        
         int visited_count = part_one(lines, sb);
-        //printf("%d - %d %d %d %d\n", visited_count, sb.x, sb.y, sb.dx, sb.dy);
-
         if (visited_count > best) best = visited_count;
     }
 
