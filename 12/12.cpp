@@ -51,6 +51,11 @@ long arrangements(std::string& springs, std::vector<int>& lens, int i, int cur, 
         }
         memo[key] = 0;
         return 0;
+    } else if ((j == lens.size() && cur == 0) || (j == lens.size()-1 && cur == lens[j])) {
+        // final group, check if any more # remaining
+        int rem = (springs.find("#", i) == std::string::npos);
+        memo[key] = rem;
+        return rem;
     }
 
     long result = 0;
