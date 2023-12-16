@@ -6,6 +6,7 @@
 #include <set>
 #include <map>
 #include <tuple>
+#include <unordered_map>
 
 
 bool read_file(std::string filename, std::vector<std::string>& lines) {
@@ -37,75 +38,47 @@ std::vector<std::string> split(const std::string &str, char delim) {
 }
 
 
-typedef struct spring_group {
-    int start;
-    int length;
-    char type;
-};
+long arrangements(std::string& springs, std::vector<int>& lens, int i, int cur, int j, std::unordered_map<std::string, long>& memo) {
+    //printf("%d %d %d %d\n", i, cur, j, lens[j]);
+    std::string key = std::to_string(i) + "." + std::to_string(cur) + "." + std::to_string(j);
+    if (memo.find(key) != memo.end()) return memo[key];
 
-
-bool is_valid(std::string springs, std::vector<int> nums) {
-    int current = 0;
-    int group = 0;
-
-    while (current < springs.size()) {
-        if (springs[current] == '?') return true;
-        if (springs[current] == '#') {
-            int len = 1;
-            while (current+1 < springs.size() && springs[current+1] == '#') {
-                len++;
-                current++;
-            }
-            if (springs[current+1] == '?' && len <= nums[group]) return true;
-            if (group >= nums.size() || len != nums[group]) return false;
-            group++;
+    if (i == springs.size()) {
+        // end of string & final group -> arrangement found
+        if ((j == lens.size() && cur == 0) || (j == lens.size()-1 && cur == lens[j])) {
+            return 1;
         }
-        current++;
-    }
-    if (group != nums.size()) return false;
-    return true;
-}
-
-
-int get_next_unknown(std::string springs, int from) {
-    int current = from;
-    while (current < springs.size() && springs[current] != '?') current++;
-    if (current >= springs.size()) return -1;
-    return current;
-}
-
-
-int get_damage_count(std::string springs) {
-    int count = 0;
-    for (char c: springs) {
-        if (c == '#') {
-            count++;
-        }
-    }
-    return count;
-}
-
-
-int valid_arrangements(std::string springs, std::vector<spring_group> spring_groups, std::vector<int> nums, int from) {
-    if (!is_valid(springs, nums)) return 0;
-
-    int next_unknown = get_next_unknown(springs, from);
-
-    if (next_unknown == -1) {
-        if (is_valid(springs, nums)) return 1;
         return 0;
     }
 
-    int result = 0;
+    long result = 0;
 
-    std::string if_damaged = springs;
-    if_damaged[next_unknown] = '#';
-    result += valid_arrangements(if_damaged, spring_groups, nums, next_unknown+1);
+    if (cur == lens[j] && j < lens.size()) {
+        if (springs[i] == '#') {
+            memo[key] = 0; 
+            return 0;  // extended past current group
+        }
+        result += arrangements(springs, lens, i+1, 0, j+1, memo);  // end of current group
+    } else {
+        if (springs[i] == '#') {
+            result += arrangements(springs, lens, i+1, cur+1, j, memo);
+        } else if (springs[i] == '.') {
+            if (cur != 0 && cur < lens[j]) {
+                memo[key] = 0; 
+                return 0;  // current group too small 
+            }
+            result += arrangements(springs, lens, i+1, 0, j, memo);
+        } else {
+            result += arrangements(springs, lens, i+1, cur+1, j, memo);  // '?' -> '#'
+            if (cur != 0 && cur < lens[j]) {
+                result += 0;  // current group too small 
+            } else {
+                result += arrangements(springs, lens, i+1, cur, j, memo);  // '?' -> '.'
+            }
+        }
+    }
 
-    std::string if_good = springs;
-    if_good[next_unknown] = '.';
-    result += valid_arrangements(if_good, spring_groups, nums, next_unknown+1);
-
+    memo[key] = result; 
     return result;
 }
 
@@ -122,8 +95,8 @@ void unfold(std::string& springs, std::vector<int>& nums) {
 }
 
 
-int solve(std::vector<std::string>& lines, int part) {
-    int result = 0;
+long solve(std::vector<std::string>& lines, bool part2) {
+    long result = 0;
 
     for (std::string line: lines) {
         std::vector<std::string> items = split(line, ' ');
@@ -138,27 +111,13 @@ int solve(std::vector<std::string>& lines, int part) {
             ss >> c;
         }
 
-        if (part == 2) unfold(springs, nums);
+        if (part2) unfold(springs, nums);
 
-        std::vector<spring_group> spring_groups;
-        int j=0;
-        while (j<springs.size()) {
-            int start = j;
-            int len = 1;
-            char current = springs[j];
-            while (j+1 < springs.size() && springs[j+1] == current) {
-                len++;
-                j++;
-            }
-            if (current != '.') {
-                spring_groups.push_back({ start, len, springs[current] });
-            }
-            j++;
-        }
+        std::unordered_map<std::string, long> memo;
 
-        int arrangements = valid_arrangements(springs, spring_groups, nums, 0);
-        printf("%s\n%d\n", springs.c_str(), arrangements);
-        result += arrangements;
+        long k = arrangements(springs, nums, 0, 0, 0, memo);
+        //printf("%s\n%ld\n", springs.c_str(), k);
+        result += k;
     }
 
     return result;
@@ -170,6 +129,6 @@ int main(int argc, char* argv[]) {
     std::vector<std::string> lines;
 
     read_file(filename, lines);
-    printf("%d\n", solve(lines, 1));
-    printf("%d\n", solve(lines, 2));
+    printf("%ld\n", solve(lines, false));
+    printf("%ld\n", solve(lines, true));
 }
