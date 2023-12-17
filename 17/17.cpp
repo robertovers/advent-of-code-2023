@@ -53,7 +53,8 @@ std::vector<node> vertices_of(node& n, std::vector<std::vector<int> >& G) {
         int next_y = n.y + y_shifts[d];
         if (next_x >= 0 && next_x < G[0].size()
             && next_y >= 0 && next_y < G.size()
-            && (d != n.dir || n.count < 3))
+            && (d != n.dir || n.count < 3)
+            && (next_x != 0 || next_y != 0))
         {
             node next;
             if (d != n.dir) {
@@ -68,12 +69,12 @@ std::vector<node> vertices_of(node& n, std::vector<std::vector<int> >& G) {
 }
 
 
-node min_distance(std::unordered_map<std::string, node> Q, std::vector<std::vector<int> >& dist) {
+node min_distance(std::unordered_map<std::string, node>& Q, std::unordered_map<std::string, int>& dist) {
     int min_dist = INT_MAX;
     node min;
     for (auto& [qs, q]: Q) {
-        if (dist[q.y][q.x] < min_dist) {
-            min_dist = dist[q.y][q.x];
+        if (dist[node_key(q)] < min_dist) {
+            min_dist = dist[node_key(q)];
             min = q;
         }
     }
@@ -85,23 +86,24 @@ int part_one(std::vector<std::string> lines) {
 
     // Dijkstra's algorithm
 
-    std::vector<std::vector<int> > dist;
     std::vector<std::vector<int> > G;
+    std::vector<std::vector<int> > res;
+    std::unordered_map<std::string, int> dist;
     std::unordered_map<std::string, node> Q;
 
     for (int y=0; y<lines.size(); y++) {
-        std::vector<int> row_d;
         std::vector<int> row_g;
+        std::vector<int> row_r;
         for (int x=0; x<lines[0].size(); x++) {
-            row_d.push_back(INT_MAX);
             row_g.push_back(lines[y][x]-48);
+            row_r.push_back(INT_MAX);
         }
-        dist.push_back(row_d);
         G.push_back(row_g);
+        res.push_back(row_r);
     }
 
-    dist[0][0] = 0;
     node start = { 0, 0, -1, 0 };
+    dist[node_key(start)] = 0;
     Q[node_key(start)] = start;
 
     while (!Q.empty()) {
@@ -112,18 +114,21 @@ int part_one(std::vector<std::string> lines) {
         std::vector<node> vertices = vertices_of(u, G);
 
         for (auto& vert: vertices) {
-            int distu = dist[u.y][u.x] + G[vert.y][vert.x];
+            int distu = dist[node_key(u)] + G[vert.y][vert.x];
 
-            if (distu < dist[vert.y][vert.x]) {
-                dist[vert.y][vert.x] = distu;
+            if (dist.find(node_key(vert)) == dist.end() || distu < dist[node_key(vert)]) {
+                dist[node_key(vert)] = distu;
                 Q[node_key(vert)] = vert;
+                if (distu < res[vert.y][vert.x]) {
+                    res[vert.y][vert.x] = distu;
+                }
             }
         }
         
         for (int y=0; y<lines.size(); y++) {
             for (int x=0; x<lines[0].size(); x++) {
-                if (dist[y][x] < 200) {
-                    printf("%d ", dist[y][x]);
+                if (res[y][x] < 200) {
+                    printf("%d ", res[y][x]);
                 } else {
                     printf(". ");
                 }
@@ -134,7 +139,7 @@ int part_one(std::vector<std::string> lines) {
         printf("\n");
     }
 
-    return dist[G.size()-1][G[0].size()-1];
+    return res[G.size()-1][G[0].size()-1];
 }
 
 
