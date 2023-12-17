@@ -46,17 +46,21 @@ std::string node_key(node& n) {
 }
 
 
-std::vector<node> vertices_of(node& n, std::unordered_map<std::string, node>& Q, std::vector<std::vector<int> >& G) {
+std::vector<node> vertices_of(node& n, std::vector<std::vector<int> >& G) {
     std::vector<node> vertices;
     for (int d=0; d<4; d++) {
         int next_x = n.x + x_shifts[d];
         int next_y = n.y + y_shifts[d];
         if (next_x >= 0 && next_x < G[0].size()
             && next_y >= 0 && next_y < G.size()
-            && Q.find(node_key(n)) == Q.end()
             && (d != n.dir || n.count < 3))
         {
-            node next = { next_x, next_y, d, n.count+1 };
+            node next;
+            if (d != n.dir) {
+                next = { next_x, next_y, d, 1 };
+            } else {
+                next = { next_x, next_y, d, n.count+1 };
+            }
             vertices.push_back(next);
         }
     }
@@ -105,10 +109,9 @@ int part_one(std::vector<std::string> lines) {
         node u = min_distance(Q, dist);
         Q.erase(node_key(u));
 
-        std::vector<node> vertices = vertices_of(u, Q, G);
+        std::vector<node> vertices = vertices_of(u, G);
 
         for (auto& vert: vertices) {
-
             int distu = dist[u.y][u.x] + G[vert.y][vert.x];
 
             if (distu < dist[vert.y][vert.x]) {
