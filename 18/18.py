@@ -5,7 +5,7 @@ import sys
 def shoelace(v):
     """
     Shoelace formula:
-    A = 1/2 * sum ( y_i * ( x_i-1 - x_i+1 ) )
+    A = 1/2 * sum ( x_i * y_i+1 - x_i+1 * y_i ) )
     """
     area = 0
     for i in range(len(v)-1):
@@ -33,7 +33,6 @@ def solve(lines, part2: bool = False):
 
     v = [(0, 0)]
     x, y = 0, 0
-    prev_x, prev_y = 0, 0
     perimeter = 0
     for (d, k, _) in inp:
         dx, dy = dirs[d]
@@ -41,14 +40,13 @@ def solve(lines, part2: bool = False):
         y += dy * int(k)
         v.append((x, y))
         perimeter += int(k)
-        prev_x, prev_y = x, y
 
     area = shoelace(v)
 
     # Pick's Theorem
     points_inside = area - perimeter // 2 + 1
     result = points_inside + perimeter
-    return (area, perimeter, result)
+    return result
 
 
 if __name__ == "__main__":
