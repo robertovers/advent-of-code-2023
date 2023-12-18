@@ -2,75 +2,53 @@ import heapq
 import sys
 
 
+def shoelace(v):
+    """
+    Shoelace formula:
+    A = 1/2 * sum ( y_i * ( x_i-1 - x_i+1 ) )
+    """
+    area = 0
+    for i in range(len(v)-1):
+        x1, y1 = v[i]
+        x2, y2 = v[i + 1]
+        area += x1 * y2 - x2 * y1 
+    return abs(area // 2)
+
+
 def solve(lines, part2: bool = False):
 
     inp = [tuple(ln.strip("\n").split(" ")) for ln in lines]
+    dirs = {"R": (1, 0), "D": (0, 1), "L": (-1, 0), "U": (0, -1)}
+    dirs_i = {0: "R", 1: "D", 2: "L", 3: "U"}
 
-    #inp2 = []
-    #for (d, k, col) in inp:
-    #    k2 = int(col[2:7], 16)
-    #    b = int(col[7:8])
-    #    c2 = ""
-    #    if b == 0:
-    #        c2 = "R"
-    #    if b == 1:
-    #        c2 = "D"
-    #    if b == 2:
-    #        c2 = "L"
-    #    if b == 3:
-    #        c2 = "U"
-    #    inp2.append((c2, k2, 0))
+    if part2:
+        inp2 = []
+        for (_, _, col) in inp:
+            k2 = int(col[2:7], 16)
+            b = int(col[7:8])
+            c2 = dirs_i[b]
+            inp2.append((c2, k2, 0))
+        inp = inp2
 
-    dirs = ["R", "D", "L", "U"]
-    xs = [1, 0, -1, 0]
-    ys = [0, 1, 0, -1]
-    dirc = [0, 0, 0, 0]
 
-    for (d, k, col) in inp:
-        for i in range(4):
-            if dirs[i] == d: dirc[i] += int(k)
+    v = [(0, 0)]
+    x, y = 0, 0
+    prev_x, prev_y = 0, 0
+    perimeter = 0
+    for (d, k, _) in inp:
+        dx, dy = dirs[d]
+        x += dx * int(k)
+        y += dy * int(k)
+        v.append((x, y))
+        perimeter += int(k)
+        prev_x, prev_y = x, y
 
-    G = [["." for _ in range(dirc[0]+2)] for _ in range(dirc[1]+2)]
+    area = shoelace(v)
 
-    x, y = 1, 1
-    for (d, k, col) in inp:
-        i = 0
-        while i < int(k):
-            G[y][x] = "#"
-            for j in range(4):
-                if dirs[j] == d:
-                    x += xs[j]
-                    y += ys[j]
-            i += 1
-
-    q = [(0, 0)]
-
-    while q:
-        x, y = q.pop()
-        if G[y][x] == "x": continue
-        if G[y][x] != "#": G[y][x] = "x"
-
-        for i in range(4):
-            xn = x + xs[i]
-            yn = y + ys[i]
-            if xn >= 0 and xn < len(G[0]) and yn >= 0 and yn < len(G):
-                if G[yn][xn] != "#":
-                    q.append((xn, yn))
-
-    res = 0
-    for ln in G:
-        for c in ln:
-            if c == "x":
-                res += 1
-
-    with open("path.txt", "w") as f:
-        for ln in G:
-            row = ""
-            for c in ln:
-                row += c
-            f.write(row + "\n")
-
-    return len(G) * len(G[0]) - res
+    # Pick's Theorem
+    points_inside = area - perimeter // 2 + 1
+    result = points_inside + perimeter
+    return (area, perimeter, result)
 
 
 if __name__ == "__main__":
