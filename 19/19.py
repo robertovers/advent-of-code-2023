@@ -2,6 +2,7 @@ import sys
 
 
 def part_one(lines):
+
     workflows = {}
     i = 0
     while lines[i] != "\n":
@@ -10,7 +11,15 @@ def part_one(lines):
         name = ln[0:br]
         rules = ln[br+1:].strip("\n").split(",")
         rules = [r[:len(r)] for r in rules]
-        workflows[name] = rules
+        rules_p = []
+        for rule in rules:
+            if ":" in rule:
+                var, op = rule[0], rule[1]
+                val, end = rule[2:].split(":") 
+                rules_p += [(var, op, int(val), end)]
+            else:
+                rules_p += [rule]
+        workflows[name] = rules_p
         i += 1
 
     parts = []
@@ -22,39 +31,24 @@ def part_one(lines):
 
     res = 0
     for p in parts:
-        r = 0
-        current = workflows["in"]
-        while r < len(current):
-            rule = current[r]
-            if rule == "R":
-                break
-            elif rule == "A":
-                res += sum(p.values()) 
-                break
-
-            if ":" in rule:
-                var, op = rule[0], rule[1]
-                val, end = rule[2:].split(":") 
-            else:
-                current = workflows[current[r]]
-                r = 0
-                continue
-
-            passed = p[var] < int(val) if op == "<" else p[var] > int(val)
-            if passed:
-                r = 0
-                if end == "A" or current[r] == "A":
-                    res += sum(p.values())
+        cur = "in"
+        while cur not in "AR":
+            rules = workflows[cur]
+            end = rules[-1:][0]
+            for var, op, val, next in rules[:-1]:
+                passed = p[var] < val if op == "<" else p[var] > val
+                if passed:
+                    cur = next
                     break
-                elif end != "R":
-                    current = workflows[end]
-            else:
-                r += 1
+            if not passed:
+                cur = end
+        res += sum(p.values()) if cur == "A" else 0
 
     return res
 
 
 def part_two(lines):
+
     workflows = {}
     i = 0
     while lines[i] != "\n":
@@ -75,10 +69,14 @@ def part_two(lines):
 
     res = 0
 
+    rs = {"x": (0, 4000), "m": (0, 4000), "a": (0, 4000), "s": (0, 4000)}
+
+    def recur(workflow, rs):
+        return
+
+    recur("in", rs)
+
     return res
-
-
-
 
 
 if __name__ == "__main__":
