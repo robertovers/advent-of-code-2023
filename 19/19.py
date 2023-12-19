@@ -1,8 +1,8 @@
 import sys
 
 
-def part_one(lines):
-
+def parse(lines):
+    
     workflows = {}
     i = 0
     while lines[i] != "\n":
@@ -29,6 +29,13 @@ def part_one(lines):
             part[p[0]] = int(p[2:])
         parts += [part]
 
+    return (workflows, parts)
+
+
+def part_one(lines):
+
+    workflows, parts = parse(lines)
+
     res = 0
     for p in parts:
         cur = "in"
@@ -48,34 +55,35 @@ def part_one(lines):
 
 
 def part_two(lines):
+    
+    workflows, parts = parse(lines)
 
-    workflows = {}
-    i = 0
-    while lines[i] != "\n":
-        ln = lines[i][:len(lines[i])-2]
-        br = ln.find("{")  # }
-        name = ln[0:br]
-        rules = ln[br+1:].strip("\n").split(",")
-        rules = [r[:len(r)] for r in rules]
-        workflows[name] = rules
-        i += 1
+    def recur(cur, rs):
+        if cur == "A":
+            res = 1
+            for c in "xmas":
+                res *= rs[c][1] - rs[c][0] + 1
+            return res
+        elif cur == "R":
+            return 0
 
-    parts = []
-    for ln in lines[i+1:]:
-        part = {}
-        for p in ln[1:len(ln)-2].split(","):
-            part[p[0]] = int(p[2:])
-        parts += [part]
+        rules = workflows[cur]
+        end = rules[-1:][0]
 
-    res = 0
+        res = 0
+        for var, op, val, next in rules[:-1]:
+            lwr, upr = rs[var]
+            pass_r = (val+1, upr) if op == ">" else (lwr, val-1)
+            fail_r = (lwr, val) if op == ">" else (val, upr)
+            rs[var] = pass_r
+            res += recur(next, rs.copy())
+            rs[var] = fail_r
+        
+        res += recur(end, rs.copy())
+        return res
 
-    rs = {"x": (0, 4000), "m": (0, 4000), "a": (0, 4000), "s": (0, 4000)}
-
-    def recur(workflow, rs):
-        return
-
-    recur("in", rs)
-
+    rs = {"x": (1, 4000), "m": (1, 4000), "a": (1, 4000), "s": (1, 4000)}
+    res = recur("in", rs)
     return res
 
 
