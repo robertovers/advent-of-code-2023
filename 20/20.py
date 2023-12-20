@@ -1,4 +1,5 @@
 import sys
+import math
 from functools import cache
 
 
@@ -7,17 +8,16 @@ def send_pulse(nm, frm, pls, modules):
     pq = []
 
     if typ == "%":
-        if pls == 0:
-            if state == 0:
-                state = 1
-                for dst in dsts:
-                    pq += [(dst, nm, 1)]
-                modules[nm] = (typ, dsts, state, mem)
-            else:
-                state = 0
-                for dst in dsts:
-                    pq += [(dst, nm, 0)]
-                modules[nm] = (typ, dsts, state, mem)
+        if pls == 0 and state == 0:
+            state = 1
+            for dst in dsts:
+                pq += [(dst, nm, 1)]
+            modules[nm] = (typ, dsts, state, mem)
+        elif pls == 0:
+            state = 0
+            for dst in dsts:
+                pq += [(dst, nm, 0)]
+            modules[nm] = (typ, dsts, state, mem)
 
         return (pq)
 
@@ -42,8 +42,7 @@ def send_pulse(nm, frm, pls, modules):
     return pq
 
 
-def solve(lines):
-
+def parse_modules(lines):
     modules = {}
 
     for ln in lines:
@@ -55,10 +54,10 @@ def solve(lines):
         typ = ln[0]
         nm = ln[1:ax-1]
         # (type, destinations, state, memory)
-        modules[nm] = (typ, dsts, 0, {})  # 0 = off or low, 1 = on or high
+        modules[nm] = (typ, dsts, 0, {})
 
     not_in = []
-    # set low state for all conjuctions
+    # set low state for all conjuction inputs
     for mdl in modules.keys():
         typ, dsts, state, mem = modules[mdl]
         for dst in dsts:
@@ -69,8 +68,14 @@ def solve(lines):
 
     for dst in not_in:
         modules[dst] = ("end", [], 0, {})
+    
+    return modules
 
-    # (to, from, pls, lo, hi)
+
+def part_one(lines):
+
+    modules = parse_modules(lines)
+
     pq = [("bcst", "start", 0)]
     ct = [0, 0] # lo, hi
 
@@ -78,13 +83,57 @@ def solve(lines):
         pq = [("bcst", "start", 0)]
         while pq:
             cur = pq.pop(0)
-            if cur[0] == "rx" and cur[2] == 0:
-                return i
             ct[cur[2]] += 1
-            plss = send_pulse(cur[0], cur[1], cur[2], modules)
+            plss = send_pulse(*cur, modules)
             pq += plss
 
     return ct[0] * ct[1]
+
+
+def inputs_of(nm, modules):
+    inp = []
+    for mdl in modules.keys():
+        typ, dsts, state, mem = modules[mdl]
+        if nm in dsts:
+            inp += [mdl]
+    return inp
+
+
+def part_two(lines):
+
+    modules = parse_modules(lines)    
+
+    inputs = inputs_of("zh", modules)
+    first = {}
+    cycles = {}
+    fin = {}
+
+    for i in range(10000000):
+        pq = [("bcst", "start", 0)]
+
+        while pq:
+
+            for inp in inputs:
+                typ, dsts, state, mem = modules[inp]
+                sends_hi = True
+                for m in mem.values():
+                    sends_hi &= m==0
+                if sends_hi and i > 0:
+                    if inp not in cycles and i > 0:
+                        cycles[inp] = i + 1
+
+            end = True
+            for inp in inputs:
+                if inp not in cycles:
+                    end = False
+            if end:
+                return math.lcm(*cycles.values())
+
+            cur = pq.pop(0)
+            plss = send_pulse(*cur, modules)
+            pq += plss
+
+    return 0
 
 
 if __name__ == "__main__":
@@ -92,4 +141,5 @@ if __name__ == "__main__":
     file = sys.argv[1]
     with open(file, "r") as f:
         lines = f.readlines()
-    print(solve(lines))
+    print(part_one(lines))
+    print(part_two(lines))
