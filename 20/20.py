@@ -11,13 +11,12 @@ def send_pulse(nm, frm, pls, modules):
         if pls == 0 and state == 0:
             state = 1
             for dst in dsts:
-                pq += [(dst, nm, 1)]
-            modules[nm] = (typ, dsts, state, mem)
+                pq += [(dst, nm, state)]
         elif pls == 0:
             state = 0
             for dst in dsts:
-                pq += [(dst, nm, 0)]
-            modules[nm] = (typ, dsts, state, mem)
+                pq += [(dst, nm, state)]
+        modules[nm] = (typ, dsts, state, mem)
 
         return (pq)
 
@@ -27,17 +26,9 @@ def send_pulse(nm, frm, pls, modules):
         for val in mem.values():
             if val == 0:
                 pls = 1
-        for dst in dsts:
-            if pls == 1:
-                pq += [(dst, nm, pls)]
-            else:
-                pq += [(dst, nm, pls)]
-    elif dsts:
-        for dst in dsts:
-            if pls == 1:
-                pq += [(dst, nm, pls)]
-            else:
-                pq += [(dst, nm, pls)]
+
+    for dst in dsts:
+        pq += [(dst, nm, pls)]
 
     return pq
 
@@ -103,16 +94,13 @@ def part_two(lines):
 
     modules = parse_modules(lines)    
 
-    inputs = inputs_of("zh", modules)
-    first = {}
+    inputs = [inputs_of(inp, modules) for inp in inputs_of("rx", modules)][0]
     cycles = {}
-    fin = {}
 
-    for i in range(10000000):
+    i = 0
+    while not all([inp in cycles for inp in inputs]):
         pq = [("bcst", "start", 0)]
-
         while pq:
-
             for inp in inputs:
                 typ, dsts, state, mem = modules[inp]
                 sends_hi = True
@@ -122,18 +110,13 @@ def part_two(lines):
                     if inp not in cycles and i > 0:
                         cycles[inp] = i + 1
 
-            end = True
-            for inp in inputs:
-                if inp not in cycles:
-                    end = False
-            if end:
-                return math.lcm(*cycles.values())
-
             cur = pq.pop(0)
             plss = send_pulse(*cur, modules)
             pq += plss
+        
+        i += 1
 
-    return 0
+    return math.lcm(*cycles.values())
 
 
 if __name__ == "__main__":
