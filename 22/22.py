@@ -2,7 +2,7 @@ import sys
 from functools import cache
 
 
-def overlaps(b1, b2):
+def overlaps(b1, b2, check_z):
     a1, c1 = b1
     a2, c2 = b2
     x1, y1, z1 = a1
@@ -12,30 +12,11 @@ def overlaps(b1, b2):
 
     if max(x1, x2) < min(x3, x4) or min(x1, x2) > max(x3, x4):
         return False
-
-    if max(y1, y2) < min(y3, y4) or min(y1, y2) > max(y3, y4):
+    elif max(y1, y2) < min(y3, y4) or min(y1, y2) > max(y3, y4):
         return False
-
-    if max(z1, z2) < min(z3, z4) or min(z1, z2) > max(z3, z4):
-        return False
-
-    return True
-
-
-def overlaps_xy(b1, b2):
-    a1, c1 = b1
-    a2, c2 = b2
-    x1, y1, _ = a1
-    x2, y2, _ = c1
-    x3, y3, _ = a2
-    x4, y4, _ = c2
-
-    if max(x1, x2) < min(x3, x4) or min(x1, x2) > max(x3, x4):
-        return False
-
-    if max(y1, y2) < min(y3, y4) or min(y1, y2) > max(y3, y4):
-        return False
-
+    elif check_z:
+        if max(z1, z2) < min(z3, z4) or min(z1, z2) > max(z3, z4):
+            return False
     return True
 
 
@@ -46,6 +27,7 @@ def solve(lines):
     bricks = sorted(bricks, key=lambda b: b[0][2])
     settled = []
 
+    # drop the bricks
     for a, b in bricks:
         ax, ay, az = a
         bx, by, bz = b
@@ -58,76 +40,71 @@ def solve(lines):
             while can_fall:
                 next = ((ax, ay, az-1), (bx, by, bz-1))
                 for c in settled:
-                    if overlaps(c, next) or min(az, bz) == 1:
+                    if overlaps(c, next, True) or min(az, bz) == 1:
                         can_fall = False
                 if can_fall:
                     az -= 1
                     bz -= 1
         settled += [((ax, ay, az), (bx, by, bz))]
 
-    print(len(settled))
-
-    supports = {} # key supports values
-    supported_by = {} # key supported by values
+    above = {}
+    below = {}
     for b in settled:
+        b1, b2 = b
         sups = []
         for c in settled:
-            if b != c and overlaps_xy(b, c) and max(b[0][2], b[1][2]) == min(c[0][2], c[1][2])-1:
+            c1, c2 = c
+            if b != c and overlaps(b, c, False) and max(b1[2], b2[2]) == min(c1[2], c2[2])-1:
                 sups += [c]
-                if c not in supported_by:
-                    supported_by[c] = [b]
+                if c not in below:
+                    below[c] = [b]
                 else:
-                    supported_by[c] += [b]
-        supports[b] = sups
+                    below[c] += [b]
+        above[b] = sups
 
-    def depends_on(a, b, supported_by, memo):
-        # will a fall if b is pulled 
+    def supported_by(a, b, below, memo):
+        # check if a is supported by b
         if (a, b) in memo:
             return memo[(a, b)]
-        if a not in supported_by.keys():
+        if a not in below.keys():  # has nothing supporting it
             memo[(a, b)] = False
             return False
-        elif b in supported_by[a] and len(supported_by[a]) == 1:
+        elif b in below[a] and len(below[a]) == 1:  # b is only brick supporting a
             memo[(a, b)] = True
             return True
-        elif b in supported_by[a]:
-            memo[(a, b)] = False
-            return False
-        else:
+        else:  # check if bricks supporting a are supported by b
             res = True
-            for c in supported_by[a]:
-                res &= depends_on(c, b, supported_by, memo)
+            for c in below[a]:
+                res &= supported_by(c, b, below, memo)
             memo[(a, b)] = res
             return res
 
-    cant_dis = []
+    unsafe = []
     for b in settled:
-        suppb = []
+        b1, b2 = b
+        sup_by = []
         for c in settled:
-            if b != c and overlaps_xy(b, c) and min(b[0][2], b[1][2]) == max(c[0][2], c[1][2])+1:
-                suppb += [c]
-        if len(suppb) < 2:
-            cant_dis += suppb
+            c1, c2 = c
+            if b != c and overlaps(b, c, False) and min(b1[2], b2[2]) == max(c1[2], c2[2])+1:
+                sup_by += [c]
+        if len(sup_by) < 2:
+            unsafe += sup_by
 
-    cant_dis = list(set(cant_dis))
+    unsafe = list(set(unsafe))
+    print(len(settled) - len(unsafe))
 
     ct = 0
-    i = 0
     memo = {}
-    for c in cant_dis:
-        j = 0
+    for c in unsafe:
         for b in settled:
             if (b, c) in memo:
-                x = memo[(b,c)]
-                if x:
-                    ct += 1
-            elif c != b and min(b[0][2], b[1][2]) > max(c[0][2], c[1][2]) and depends_on(b, c, supported_by, memo):
+                sup = memo[(b,c)]
+                if sup: ct += 1
+            elif c != b and min(b[0][2], b[1][2]) > max(c[0][2], c[1][2]) and supported_by(b, c, below, memo):
                 memo[(b, c)] = True
                 ct += 1
             else:
                 memo[(b, c)] = False
-            j += 1
-        i += 1
 
     return ct
 
