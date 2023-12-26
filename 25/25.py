@@ -2,6 +2,24 @@ import sys
 from heapq import heappop, heappush
 
 
+def min_cut(V, E, a):
+    """
+    Stoer-Wagner Algorithm
+    """
+    best = -1
+    merges = {}
+    for s in V: merges[s] = [s]
+    for i in range(len(V)-1):
+        V, E, cut, merges, size = min_cut_phase(V, E, a, merges)
+        s, t, wt = cut
+        print(f"iter {i}/{len(E)}: s={s} t={t} cut={wt}")
+        if best == -1 or wt < best:
+            best = wt
+        if wt == 3:
+            return size
+    return -1
+
+
 def min_cut_phase(V, E, a, merges):
     A = [a]
     H = []
@@ -31,9 +49,7 @@ def min_cut_phase(V, E, a, merges):
 
     # weight of cut
     wt = sum([E[m][t] for m in V])
-
     cur_size = len(merges[t])
-    print(len(merges[t]))
 
     # merge the edges s & t into s and add their weights for edges connected to both
     merges[s] = merges[s] + merges[t]
@@ -50,25 +66,6 @@ def min_cut_phase(V, E, a, merges):
         E[t][v] = 0
 
     return V, E, (s, t, wt), merges, cur_size
-
-
-def min_cut(V, E, a):
-    """
-    Stoer-Wagner Algorithm
-    """
-    best = -1
-    merges = {}
-    for s in V: merges[s] = [s]
-    while len(V) > 1:
-        V, E, cut, merges, size = min_cut_phase(V, E, a, merges)
-        s, t, wt = cut
-        print(s, t, len(V), wt)
-        if best == -1 or wt < best:
-            best = wt
-        if wt == 3:
-            return size
-    return -1
-
 
 
 def solve(lines):
@@ -88,7 +85,7 @@ def solve(lines):
                 cms[c] = [nm]
 
     Vl = sorted(list(cms.keys()))
-
+    V = [i for i in range(len(Vl))]
     E = [[0 for _ in range(len(Vl))] for _ in range(len(Vl))]
 
     for i, k in enumerate(Vl):
@@ -96,10 +93,8 @@ def solve(lines):
             if kc in cms[k]:
                 E[i][j] = 1
 
-    V = [i for i in range(len(Vl))]
-
     size = min_cut(V, E, 1)
-    res = size * (len(Vl) - size)
+    res = size * (len(E) - size)
 
     return res
 
@@ -107,7 +102,7 @@ def solve(lines):
 if __name__ == "__main__":
 
     lines = []
-    file = "25/input.txt" #sys.argv[1]
+    file = sys.argv[1]
     with open(file, "r") as f:
         lines = f.readlines()
 
